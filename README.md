@@ -13,6 +13,32 @@ itself calls `ultrahonk-soroban-contract` to verify it. Upon proof validation,
 the contract's balance is transferred to the guesser. If the proof is incorrect,
 the guesser incurs a fee for trying which goes increases the contract's balance. 
 
+### Pre-requisites
+
+Follow the installation instructions for Scaffold Stellar. Then we need to install:
+
+- barretenberg v0.87.0
+- nargo 1.0.0-beta.9
+
+```bash
+curl -L \
+  https://github.com/AztecProtocol/aztec-packages/releases/download/v0.87.0/barretenberg-arm64-darwin.tar.gz \
+  -o /tmp/bb.tar.gz
+tar -xzf /tmp/bb.tar.gz -C ~/.bb/bin
+
+curl -L https://raw.githubusercontent.com/noir-lang/noirup/main/install
+noirup -v 1.0.0-beta.9
+```
+
+From there you can run `nargo` to verify your circuit and use `bb` to make proofs and verification keys:
+```bash
+// 
+nargo compile
+bb write_vk -b target/zcore_zk.json -o target --scheme ultra_honk --oracle_hash keccak --output_format bytes_and_fields
+```
+
+This creates a `target/vk_fields.json` which you need to copy to the frontend under `public/circuits`.
+
 ### Getting started
 
 ```bash
