@@ -18,7 +18,7 @@ const paging: Record<
 > = {};
 
 // NOTE: Server is configured using envvars which shouldn't change during runtime
-const server = new Server(rpcUrl, { allowHttp: stellarNetwork === "LOCAL" });
+const server = new Server(rpcUrl, { allowHttp: stellarNetwork === "LOCAL" || stellarNetwork === "NOIR" });
 
 /**
  * Subscribe to events for a given topic from a given contract, using a library

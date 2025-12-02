@@ -57,6 +57,8 @@ function getHorizonHost(mode: string) {
   switch (mode) {
     case "LOCAL":
       return "http://localhost:8000";
+    case "NOIR":
+      return "https://noir-local.stellar.buzz";
     case "FUTURENET":
       return "https://horizon-futurenet.stellar.org";
     case "TESTNET":
@@ -70,7 +72,7 @@ function getHorizonHost(mode: string) {
 
 export const fetchBalance = async (address: string) => {
   const horizon = new Horizon.Server(getHorizonHost(stellarNetwork), {
-    allowHttp: stellarNetwork === "LOCAL",
+    allowHttp: stellarNetwork === "LOCAL" || stellarNetwork === "NOIR",
   });
 
   const { balances } = await horizon.accounts().accountId(address).call();

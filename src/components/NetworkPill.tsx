@@ -4,11 +4,16 @@ import { useWallet } from "../hooks/useWallet";
 import { stellarNetwork } from "../contracts/util";
 
 // Format network name with first letter capitalized
-const formatNetworkName = (name: string) =>
+const formatNetworkName = (name: string) => {
   // TODO: This is a workaround until @creit-tech/stellar-wallets-kit uses the new name for a local network.
-  name === "STANDALONE"
-    ? "Local"
-    : name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
+  if (name === "STANDALONE") {
+    return "Local";
+  }
+  if (name === "NOIR") {
+    return "NOIR";
+  }
+  return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
+};
 
 const appNetwork = formatNetworkName(stellarNetwork);
 

@@ -2,24 +2,56 @@ import { useState, useEffect } from "react";
 import { Button, Input, Text } from "@stellar/design-system";
 import { Box } from "./layout/Box";
 import storage from "../util/storage";
+import { stellarNetwork } from "../contracts/util";
 
-const DEFAULT_CONTRACT_ID = 'CBXWA6DTDZTSOQ4LSUDW4XFUJSZK5MA5T5HEI5GD5ZJGW2OBEHTS4J4W';
+// Get network-specific default contract ID
+const getNetworkDefaultContractId = (network: string): string => {
+  switch (network) {
+    case 'NOIR':
+      return 'CCOBCE3MIRXNKA7AMWT2Y5R6IU6A734MM6OM67X7QQHBZTC4NP7D2SJT';
+    case 'LOCAL':
+    default:
+      return 'CBXWA6DTDZTSOQ4LSUDW4XFUJSZK5MA5T5HEI5GD5ZJGW2OBEHTS4J4W';
+  }
+};
 
-const getContractId = (): string => {
+// Get contract ID: first check storage (user override), then fall back to network default
+const getContractId = (network: string): string => {
   const stored = storage.getItem('contractId', 'safe');
-  return stored || DEFAULT_CONTRACT_ID;
+  if (stored) {
+    return stored;
+  }
+  return getNetworkDefaultContractId(network);
 };
 
 export const ContractConfig = () => {
   const [contractId, setContractId] = useState<string>("");
   const [isUpdating, setIsUpdating] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [hasManualOverride, setHasManualOverride] = useState(false);
 
+  // Load contract ID on mount and when network changes
   useEffect(() => {
-    // Load current contract ID on mount
-    const currentId = getContractId();
-    setContractId(currentId);
-  }, []);
+    const stored = storage.getItem('contractId', 'safe');
+    const networkDefault = getNetworkDefaultContractId(stellarNetwork);
+    
+    // When network changes, always update input field to network default
+    // If user had an override that differs from the new network's default, we'll keep showing it
+    // but they can reset if needed
+    if (stored && stored !== networkDefault) {
+      // User has a manual override that differs from current network default
+      setContractId(stored);
+      setHasManualOverride(true);
+    } else {
+      // Use network default
+      setContractId(networkDefault);
+      setHasManualOverride(false);
+      // Clear storage to use network default
+      if (stored) {
+        storage.removeItem('contractId');
+      }
+    }
+  }, [stellarNetwork]);
 
   const handleUpdate = () => {
     if (!contractId.trim()) {
@@ -37,9 +69,9 @@ export const ContractConfig = () => {
     setMessage(null);
 
     try {
-      // Store the contract ID
+      // Store the contract ID as a manual override
       storage.setItem('contractId', contractId);
-      // Note: Contract client will need to be re-initialized or reloaded to use the new ID
+      setHasManualOverride(true);
       setMessage({ type: "success", text: "Contract address updated successfully! Please refresh the page to use the new contract." });
       
       // Clear message after 5 seconds
@@ -51,6 +83,24 @@ export const ContractConfig = () => {
     } finally {
       setIsUpdating(false);
     }
+  };
+
+  const handleInputChange = (value: string) => {
+    setContractId(value);
+    setMessage(null);
+    // If user clears the field or changes it, mark as potential manual override
+    // (will be confirmed on Update button click)
+  };
+
+  const handleResetToDefault = () => {
+    const defaultId = getNetworkDefaultContractId(stellarNetwork);
+    setContractId(defaultId);
+    storage.removeItem('contractId');
+    setHasManualOverride(false);
+    setMessage({ type: "success", text: "Reset to network default. Please refresh the page." });
+    setTimeout(() => {
+      setMessage(null);
+    }, 5000);
   };
 
   return (
@@ -70,10 +120,7 @@ export const ContractConfig = () => {
           id="contract-id"
           fieldSize="md"
           value={contractId}
-          onChange={(e) => {
-            setContractId(e.target.value);
-            setMessage(null);
-          }}
+          onChange={(e) => handleInputChange(e.target.value)}
           placeholder="Enter contract ID"
           style={{ width: "500px", fontFamily: "monospace", fontSize: "0.85rem", flexShrink: 0 }}
         />
@@ -86,6 +133,17 @@ export const ContractConfig = () => {
         >
           {isUpdating ? "Updating..." : "Update"}
         </Button>
+        {hasManualOverride && (
+          <Button
+            onClick={handleResetToDefault}
+            disabled={isUpdating}
+            variant="tertiary"
+            size="md"
+            style={{ flexShrink: 0 }}
+          >
+            Reset to Default
+          </Button>
+        )}
       </Box>
 
       {message && (

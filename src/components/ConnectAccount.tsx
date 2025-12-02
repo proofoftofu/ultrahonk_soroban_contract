@@ -3,6 +3,7 @@ import { stellarNetwork } from "../contracts/util";
 import FundAccountButton from "./FundAccountButton";
 import { WalletButton } from "./WalletButton";
 import NetworkPill from "./NetworkPill";
+import NetworkSwitcher from "./NetworkSwitcher";
 
 const ConnectAccount: React.FC = () => {
   return (
@@ -18,6 +19,7 @@ const ConnectAccount: React.FC = () => {
       <WalletButton />
       {stellarNetwork !== "PUBLIC" && <FundAccountButton />}
       <NetworkPill />
+      <NetworkSwitcher />
     </div>
   );
 };

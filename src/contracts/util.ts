@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { WalletNetwork } from "@creit.tech/stellar-wallets-kit";
 import { Network, NetworkType } from "../debug/types/types";
+import storage from "../util/storage";
 
 const envSchema = z.object({
   PUBLIC_STELLAR_NETWORK: z.enum([
@@ -26,11 +27,37 @@ const env: z.infer<typeof envSchema> = parsed.success
       PUBLIC_STELLAR_HORIZON_URL: "http://localhost:8000",
     };
 
-export const stellarNetwork =
-  env.PUBLIC_STELLAR_NETWORK === "STANDALONE"
+// Check localStorage for runtime-selected network first, fall back to env var
+const getSelectedNetwork = (): string => {
+  const selected = storage.getItem("selectedNetwork");
+  if (selected) {
+    return selected;
+  }
+  return env.PUBLIC_STELLAR_NETWORK === "STANDALONE"
     ? "LOCAL"
     : env.PUBLIC_STELLAR_NETWORK;
-export const networkPassphrase = env.PUBLIC_STELLAR_NETWORK_PASSPHRASE;
+};
+
+export const stellarNetwork = getSelectedNetwork();
+
+// Get network passphrase based on selected network
+const getNetworkPassphrase = (network: string): WalletNetwork => {
+  switch (network) {
+    case "LOCAL":
+    case "NOIR":
+      return WalletNetwork.STANDALONE;
+    case "TESTNET":
+      return WalletNetwork.TESTNET;
+    case "FUTURENET":
+      return WalletNetwork.FUTURENET;
+    case "PUBLIC":
+      return WalletNetwork.PUBLIC;
+    default:
+      return env.PUBLIC_STELLAR_NETWORK_PASSPHRASE;
+  }
+};
+
+export const networkPassphrase = getNetworkPassphrase(stellarNetwork);
 
 const stellarEncode = (str: string) => {
   return str.replace(/\//g, "//").replace(/;/g, "/;");
@@ -44,6 +71,8 @@ export const labPrefix = () => {
   switch (stellarNetwork) {
     case "LOCAL":
       return `http://localhost:8000/lab/transaction-dashboard?$=network$id=custom&label=Custom&horizonUrl=${stellarEncode(localHorizonUrl)}&rpcUrl=${stellarEncode(localRpcUrl)}&passphrase=${stellarEncode(networkPassphrase)};`;
+    case "NOIR":
+      return `https://lab.stellar.org/transaction-dashboard?$=network$id=custom&label=NOIR&horizonUrl=${stellarEncode(horizonUrl)}&rpcUrl=${stellarEncode(rpcUrl)}&passphrase=${stellarEncode(networkPassphrase)};`;
     case "PUBLIC":
       return `https://lab.stellar.org/transaction-dashboard?$=network$id=mainnet&label=Mainnet&horizonUrl=${stellarEncode(horizonUrl)}&rpcUrl=${stellarEncode(rpcUrl)}&passphrase=${stellarEncode(networkPassphrase)};`;
     case "TESTNET":
@@ -55,15 +84,48 @@ export const labPrefix = () => {
   }
 };
 
-// NOTE: needs to be exported for contract files in this directory
-// Ensure localhost is used for LOCAL network, even if env vars point elsewhere
-export const rpcUrl = stellarNetwork === "LOCAL" 
-  ? "http://localhost:8000/rpc"
-  : env.PUBLIC_STELLAR_RPC_URL;
+// Get RPC and Horizon URLs based on selected network
+const getNetworkUrls = (network: string): { rpcUrl: string; horizonUrl: string } => {
+  switch (network) {
+    case "LOCAL":
+      return {
+        rpcUrl: "http://localhost:8000/rpc",
+        horizonUrl: "http://localhost:8000",
+      };
+    case "NOIR":
+      return {
+        rpcUrl: "https://noir-local.stellar.buzz/soroban/rpc",
+        horizonUrl: "https://noir-local.stellar.buzz",
+      };
+    case "TESTNET":
+      return {
+        rpcUrl: "https://soroban-testnet.stellar.org:443",
+        horizonUrl: "https://horizon-testnet.stellar.org",
+      };
+    case "FUTURENET":
+      return {
+        rpcUrl: "https://rpc-futurenet.stellar.org:443",
+        horizonUrl: "https://horizon-futurenet.stellar.org",
+      };
+    case "PUBLIC":
+      return {
+        rpcUrl: "https://soroban-rpc.mainnet.stellar.org:443",
+        horizonUrl: "https://horizon.stellar.org",
+      };
+    default:
+      // Fall back to env vars if network not recognized
+      return {
+        rpcUrl: env.PUBLIC_STELLAR_RPC_URL,
+        horizonUrl: env.PUBLIC_STELLAR_HORIZON_URL,
+      };
+  }
+};
 
-export const horizonUrl = stellarNetwork === "LOCAL"
-  ? "http://localhost:8000"
-  : env.PUBLIC_STELLAR_HORIZON_URL;
+const networkUrls = getNetworkUrls(stellarNetwork);
+
+// NOTE: needs to be exported for contract files in this directory
+export const rpcUrl = networkUrls.rpcUrl;
+export const horizonUrl = networkUrls.horizonUrl;
 
 const networkToId = (network: string): NetworkType => {
   switch (network) {
@@ -73,6 +135,8 @@ const networkToId = (network: string): NetworkType => {
       return "testnet";
     case "FUTURENET":
       return "futurenet";
+    case "NOIR":
+    case "LOCAL":
     default:
       return "custom";
   }

@@ -6,6 +6,9 @@ export function getFriendbotUrl(address: string) {
     case "LOCAL":
       // Use proxy in development for local
       return `/friendbot?addr=${address}`;
+    case "NOIR":
+      // NOIR network uses the same friendbot as LOCAL
+      return `/friendbot?addr=${address}`;
     case "FUTURENET":
       return `https://friendbot-futurenet.stellar.org/?addr=${address}`;
     case "TESTNET":
