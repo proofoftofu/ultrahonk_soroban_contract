@@ -14,6 +14,8 @@ const envSchema = z.object({
   PUBLIC_STELLAR_NETWORK_PASSPHRASE: z.nativeEnum(WalletNetwork),
   PUBLIC_STELLAR_RPC_URL: z.string(),
   PUBLIC_STELLAR_HORIZON_URL: z.string(),
+  PUBLIC_GUESS_THE_PUZZLE_CONTRACT_ID: z.string().optional(),
+  PUBLIC_ULTRAHONK_CONTRACT_ID: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(import.meta.env);
@@ -25,6 +27,8 @@ const env: z.infer<typeof envSchema> = parsed.success
       PUBLIC_STELLAR_NETWORK_PASSPHRASE: WalletNetwork.STANDALONE,
       PUBLIC_STELLAR_RPC_URL: "http://localhost:8000/rpc",
       PUBLIC_STELLAR_HORIZON_URL: "http://localhost:8000",
+      PUBLIC_GUESS_THE_PUZZLE_CONTRACT_ID: undefined,
+      PUBLIC_ULTRAHONK_CONTRACT_ID: undefined,
     };
 
 // Check localStorage for runtime-selected network first, fall back to env var
@@ -41,7 +45,7 @@ const getSelectedNetwork = (): string => {
 export const stellarNetwork = getSelectedNetwork();
 
 // Get network passphrase based on selected network
-const getNetworkPassphrase = (network: string): WalletNetwork => {
+const getNetworkPassphraseForNetwork = (network: string): WalletNetwork => {
   switch (network) {
     case "LOCAL":
     case "NOIR":
@@ -57,7 +61,13 @@ const getNetworkPassphrase = (network: string): WalletNetwork => {
   }
 };
 
-export const networkPassphrase = getNetworkPassphrase(stellarNetwork);
+// Get current network passphrase (dynamically checks current network)
+export const getNetworkPassphrase = (): WalletNetwork => {
+  const currentNetwork = getSelectedNetwork();
+  return getNetworkPassphraseForNetwork(currentNetwork);
+};
+
+export const networkPassphrase = getNetworkPassphraseForNetwork(stellarNetwork);
 
 const stellarEncode = (str: string) => {
   return str.replace(/\//g, "//").replace(/;/g, "/;");
@@ -85,7 +95,7 @@ export const labPrefix = () => {
 };
 
 // Get RPC and Horizon URLs based on selected network
-const getNetworkUrls = (network: string): { rpcUrl: string; horizonUrl: string } => {
+const getNetworkUrlsForNetwork = (network: string): { rpcUrl: string; horizonUrl: string } => {
   switch (network) {
     case "LOCAL":
       return {
@@ -121,7 +131,13 @@ const getNetworkUrls = (network: string): { rpcUrl: string; horizonUrl: string }
   }
 };
 
-const networkUrls = getNetworkUrls(stellarNetwork);
+// Get current network URLs (dynamically checks current network)
+export const getNetworkUrls = (): { rpcUrl: string; horizonUrl: string } => {
+  const currentNetwork = getSelectedNetwork();
+  return getNetworkUrlsForNetwork(currentNetwork);
+};
+
+const networkUrls = getNetworkUrlsForNetwork(stellarNetwork);
 
 // NOTE: needs to be exported for contract files in this directory
 export const rpcUrl = networkUrls.rpcUrl;
@@ -148,4 +164,32 @@ export const network: Network = {
   passphrase: networkPassphrase,
   rpcUrl: rpcUrl,
   horizonUrl: horizonUrl,
+};
+
+/**
+ * Get the guess_the_puzzle contract ID.
+ * Priority: 1. Storage override (user input), 2. Environment variable, 3. Fallback value
+ * @param skipStorage - If true, skip storage check and return env var directly
+ */
+export const getGuessThePuzzleContractId = (skipStorage = false): string => {
+  if (!skipStorage) {
+    // First check storage for user override
+    const stored = storage.getItem('contractId', 'safe');
+    if (stored) {
+      return stored;
+    }
+  }
+  // Fall back to environment variable (check both parsed env and import.meta.env as fallback)
+  const envContractId = env.PUBLIC_GUESS_THE_PUZZLE_CONTRACT_ID || import.meta.env.PUBLIC_GUESS_THE_PUZZLE_CONTRACT_ID;
+  return envContractId || 'CCOBCE3MIRXNKA7AMWT2Y5R6IU6A734MM6OM67X7QQHBZTC4NP7D2SJT';
+};
+
+/**
+ * Get the ultrahonk_soroban_contract ID from environment variable.
+ * This is required and should be set in the environment.
+ */
+export const getUltrahonkContractId = (): string => {
+  // Check both parsed env and import.meta.env as fallback
+  const envContractId = env.PUBLIC_ULTRAHONK_CONTRACT_ID || import.meta.env.PUBLIC_ULTRAHONK_CONTRACT_ID;
+  return envContractId || 'CCYFHQLAPB7CHBBE7QIN2QEBEBJPSGRJ2OJ4JPCHIN5IPKTVQ7YCR2CI';
 };

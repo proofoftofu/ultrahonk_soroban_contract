@@ -2,27 +2,7 @@ import { useState, useEffect } from "react";
 import { Button, Input, Text } from "@stellar/design-system";
 import { Box } from "./layout/Box";
 import storage from "../util/storage";
-import { stellarNetwork } from "../contracts/util";
-
-// Get network-specific default contract ID
-const getNetworkDefaultContractId = (network: string): string => {
-  switch (network) {
-    case 'NOIR':
-      return 'CCOBCE3MIRXNKA7AMWT2Y5R6IU6A734MM6OM67X7QQHBZTC4NP7D2SJT';
-    case 'LOCAL':
-    default:
-      return 'CBXWA6DTDZTSOQ4LSUDW4XFUJSZK5MA5T5HEI5GD5ZJGW2OBEHTS4J4W';
-  }
-};
-
-// Get contract ID: first check storage (user override), then fall back to network default
-const getContractId = (network: string): string => {
-  const stored = storage.getItem('contractId', 'safe');
-  if (stored) {
-    return stored;
-  }
-  return getNetworkDefaultContractId(network);
-};
+import { stellarNetwork, getGuessThePuzzleContractId } from "../contracts/util";
 
 export const ContractConfig = () => {
   const [contractId, setContractId] = useState<string>("");
@@ -33,20 +13,19 @@ export const ContractConfig = () => {
   // Load contract ID on mount and when network changes
   useEffect(() => {
     const stored = storage.getItem('contractId', 'safe');
-    const networkDefault = getNetworkDefaultContractId(stellarNetwork);
+    const envDefault = getGuessThePuzzleContractId(true);
     
-    // When network changes, always update input field to network default
-    // If user had an override that differs from the new network's default, we'll keep showing it
-    // but they can reset if needed
-    if (stored && stored !== networkDefault) {
-      // User has a manual override that differs from current network default
+    // When network changes, always update input field to env default
+    // If user had an override that differs from the env default, we'll keep showing it
+    if (stored && stored !== envDefault) {
+      // User has a manual override that differs from env default
       setContractId(stored);
       setHasManualOverride(true);
     } else {
-      // Use network default
-      setContractId(networkDefault);
+      // Use env default
+      setContractId(envDefault);
       setHasManualOverride(false);
-      // Clear storage to use network default
+      // Clear storage to use env default
       if (stored) {
         storage.removeItem('contractId');
       }
@@ -93,11 +72,11 @@ export const ContractConfig = () => {
   };
 
   const handleResetToDefault = () => {
-    const defaultId = getNetworkDefaultContractId(stellarNetwork);
+    const defaultId = getGuessThePuzzleContractId(true);
     setContractId(defaultId);
     storage.removeItem('contractId');
     setHasManualOverride(false);
-    setMessage({ type: "success", text: "Reset to network default. Please refresh the page." });
+    setMessage({ type: "success", text: "Reset to environment default. Please refresh the page." });
     setTimeout(() => {
       setMessage(null);
     }, 5000);

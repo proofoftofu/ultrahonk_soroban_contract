@@ -3,7 +3,7 @@ import { Button, Input, Text } from "@stellar/design-system";
 import { Box } from "./layout/Box";
 import { useWallet } from "../hooks/useWallet";
 import { usePrizePool } from "../contexts/PrizePoolContext";
-import { contractClient, StellarContractService } from "../services/StellarContractService";
+import { getContractClient, StellarContractService } from "../services/StellarContractService";
 
 export const PrizePool = () => {
   const { address, signTransaction } = useWallet();
@@ -52,6 +52,7 @@ export const PrizePool = () => {
     setMessage(null);
 
     try {
+      const contractClient = getContractClient();
       contractClient.options.publicKey = address;
       const amountBigInt = BigInt(amountInStroops);
       

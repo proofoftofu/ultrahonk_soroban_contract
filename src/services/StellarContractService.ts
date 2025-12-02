@@ -6,7 +6,7 @@
  */
 
 import { Buffer } from 'buffer';
-import game from '../contracts/guess_the_puzzle';
+import { createGuessThePuzzleClient } from '../contracts/guess_the_puzzle';
 
 /**
  * Transaction data extracted from a transaction result
@@ -116,7 +116,14 @@ export class StellarContractService {
 }
 
 /**
- * Export contract client for direct use by components
+ * Get contract client instance with current contract ID
+ * Creates a new instance each time to ensure it uses the latest contract ID
  */
-export { game as contractClient };
+export const getContractClient = () => createGuessThePuzzleClient();
+
+/**
+ * Export contract client for backward compatibility
+ * Note: This creates a new instance each time to ensure current contract ID is used
+ */
+export const contractClient = getContractClient();
 

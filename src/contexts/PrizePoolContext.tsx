@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useCallback, useState } from "react";
 import { useWallet } from "../hooks/useWallet";
-import { contractClient, StellarContractService } from "../services/StellarContractService";
+import { getContractClient, StellarContractService } from "../services/StellarContractService";
 
 interface PrizePoolContextType {
   balance: { stroops: string; xlm: string } | null;
@@ -36,6 +36,7 @@ export const PrizePoolProvider: React.FC<PrizePoolProviderProps> = ({ children }
     setIsLoading(true);
 
     try {
+      const contractClient = getContractClient();
       contractClient.options.publicKey = address;
       const tx = await contractClient.prize_pot();
       const result = tx.result;

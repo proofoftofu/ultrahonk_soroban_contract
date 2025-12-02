@@ -5,7 +5,7 @@ import { useWalletBalance } from '../hooks/useWalletBalance';
 import { usePrizePool } from '../contexts/PrizePoolContext';
 import { generateRandomSudoku } from '../util/sudokuGenerator';
 import { NoirService } from '../services/NoirService';
-import { contractClient, StellarContractService } from '../services/StellarContractService';
+import { getContractClient, StellarContractService } from '../services/StellarContractService';
 import styles from './Sudoku.module.css';
 
 // Example puzzle data
@@ -361,6 +361,7 @@ Attempting to submit to smart contract to see contract-level validation...
         outputText += `\n\nSubmitting invalid proof to contract (properly formatted but with invalid proof data)...\n`;
 
         try {
+          const contractClient = getContractClient();
           contractClient.options.publicKey = address;
           const vkBuffer = StellarContractService.toBuffer(vkJson);
           const proofBuffer = StellarContractService.toBuffer(proofBlob);
@@ -424,6 +425,7 @@ STELLAR VERIFICATION
 
       // Verify on Stellar
       try {
+        const contractClient = getContractClient();
         contractClient.options.publicKey = address;
         const vkBuffer = StellarContractService.toBuffer(proofResult.vkJson);
         const proofBuffer = StellarContractService.toBuffer(proofResult.proofBlob);
