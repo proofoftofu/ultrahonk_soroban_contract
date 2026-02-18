@@ -10,7 +10,8 @@ repository = "https://github.com/tupui/ultrahonk_soroban_contract"
 version = "1.0.0"
 
 [workspace.dependencies.soroban-sdk]
-version = "23.1.0"
+git = "https://github.com/stellar/rs-soroban-sdk.git"
+rev = "acffbbd45be6a0a551146eebfc268d6f95078246"
 
 [profile.release]
 opt-level = "z"
