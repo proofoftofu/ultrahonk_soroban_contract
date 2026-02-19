@@ -8,8 +8,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 soroban-sdk = { workspace = true, default-features = false, features = ["alloc"] }
-ultrahonk_soroban_verifier = { git = "https://github.com/yugocabrio/ultrahonk-rust-verifier.git", package = "ultrahonk_soroban_verifier", default-features = false, features = ["alloc"] }
-sha3 = { version = "0.10", default-features = false }
+ultrahonk_rust_verifier = { git = "https://github.com/yugocabrio/ultrahonk-rust-verifier.git", package = "ultrahonk_soroban_verifier", default-features = false, features = ["alloc"] }
 
 [dev-dependencies]
 # Enable test helpers for local unit tests
